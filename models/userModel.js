@@ -19,6 +19,10 @@ const userSchema=new schema({
     password:{
         type:String,
         require:true,
+    },
+    isEmailVerified:{
+        type:Boolean,
+        default:false,
     }
 })
 

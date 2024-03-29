@@ -4,13 +4,16 @@ const mongoose = require("mongoose");
 
 const userModel = require("./models/userModel");
 const bcrypt = require("bcryptjs");
-const { userDataValidation, isEmailRgex } = require("./utils/authUtils");
+const { userDataValidation, isEmailRgex, generateToken, sendVerificationEmail } = require("./utils/authUtils");
 const session = require("express-session");
 const mongoDbSession = require("connect-mongodb-session")(session);
 const isAuth = require("./middlewares/isAuthMiddleware");
 const todoModel = require("./models/todoModel");
 const todoDataValidation = require("./utils/todoUtils");
 const sessionModel = require("./models/sessionModel");
+
+const jwt=require("jsonwebtoken");
+
 
 // constants
 const app = express();
@@ -69,6 +72,9 @@ app.post("/login", async (req, res) => {
 
     if (!userDb) return res.status(400).json("User Not Found");
 
+    if(!userDb.isEmailVerified){
+      res.status(400).json("Verify Your Email First");
+    }
     //passwod match
     const passwodMatch = await bcrypt.compare(password, userDb.password);
     if (!passwodMatch) return res.status(400).json("Password does not match");
@@ -79,11 +85,11 @@ app.post("/login", async (req, res) => {
       username: userDb.username,
       email: userDb.email,
     };
-    console.log(req.session);
+    // console.log(req.session);
 
     return res.redirect("/dashboard");
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     return res.send({
       status: 500,
       message: "Internal server Error",
@@ -133,6 +139,11 @@ app.post("/register", async (req, res) => {
 
   try {
     const userdb = await userObj.save();
+
+    const verifiedToken=generateToken(email);
+    console.log(verifiedToken);
+
+    sendVerificationEmail(email, verifiedToken);
     
     return res.redirect("/login");
   } catch (error) {
@@ -143,6 +154,25 @@ app.post("/register", async (req, res) => {
     });
   }
 });
+
+app.get("/verifytoken/:token", async(req, res)=>{
+  const token =req.params.token;
+
+  const userEmail=jwt.verify(token, process.env.SECRET_KEY);
+  
+  try {
+    const userDb=await userModel.findOneAndUpdate({email:userEmail}, {isEmailVerified : true});
+    console.log(userDb);
+    return res.redirect("/login");
+  } catch (error) {
+    return res.send({
+      status:500,
+      message:"Internal server error",
+      error:error
+    })
+  }
+
+})
 
 app.get("/dashboard", isAuth, (req, res) => {
   return res.render("dashboardPage.ejs");
