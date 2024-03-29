@@ -99,7 +99,7 @@ const sendVerificationEmail=(email, verifiedToken)=>{
             <tr>
               <td style="color: #ffffff; font-family: Arial, sans-serif; font-size: 14px;">
                 <p style="margin: 0;">&reg; Someone, somewhere 2021<br/>
-               <a href="http://localhost:8000/verfytoken/${verifiedToken}" style="color: #ffffff;">Subscribe</a> to us!</p>
+               <a href=""www.progarten.in" style="color: #ffffff;">Subscribe</a> to us!</p>
               </td>
               </tr>
           </table>
