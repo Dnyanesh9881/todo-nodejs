@@ -163,7 +163,7 @@ app.get("/verifytoken/:token", async(req, res)=>{
   try {
     const userDb=await userModel.findOneAndUpdate({email:userEmail}, {isEmailVerified : true});
     console.log(userDb);
-    return res.send("/login");
+    return res.redirect("/login");
   } catch (error) {
     return res.send({
       status:500,
