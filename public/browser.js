@@ -2,19 +2,23 @@
 
 // const { default: axios } = require("axios");
 
-
+let skip=0;
 window.onload = generateTodos();
 
 async function generateTodos() {
+  console.log(skip);
   try {
-    const res = await axios.get("/read-item");
+    const res = await axios.get(`/read-item?skip=${skip}`);
     const todoData = res.data.data;
     // console.log(res.data.data);
-
+       
     if (res.data.status !== 200) {
       alert(res.data.message);
       return;
     }
+    skip+=todoData.length;
+    console.log(todoData);
+    console.log(skip);
     document.getElementById("item_list").insertAdjacentHTML(
       "beforeend",
       todoData.map((item) => {
@@ -66,5 +70,43 @@ async function generateTodos() {
         } catch (error) {
             console.log(error);
         }
+    }else if (event.target.classList.contains("add_item")) {
+      const todo = document.getElementById("create_field").value;
+      console.log(todo);
+  
+      axios
+        .post("/create-item", { todo })
+        .then((res) => {
+          if (res.data.status !== 201) {
+            alert(res.data.message);
+            return;
+          }
+          console.log(res);
+          document.getElementById("create_field").value = "";
+  
+          document.getElementById("item_list").insertAdjacentHTML(
+            "beforeend",
+            `          <li class='list-group-item list-group-item-action d-flex align-items-center justify-content-between'>
+              <span class='item-text'> ${res.data.data.todo}</span>
+              <div>
+                <button
+                  data-id='${res.data.data._id}'
+                  class='edit-me btn btn-secondary btn-sm mr-1'
+                >
+                  Edit
+                </button>
+                <button
+                  data-id='${res.data.data._id}'
+                  class='delete-me btn btn-danger btn-sm'
+                >
+                  Delete
+                </button>
+              </div>
+            </li>`
+          );
+        })
+        .catch((err) => console.log(err));
+    }else if(event.target.classList.contains("show_more")){
+      generateTodos();
     }
  })

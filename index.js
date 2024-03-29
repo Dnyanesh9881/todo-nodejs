@@ -155,14 +155,13 @@ app.post("/logout", isAuth, (req, res) => {
         message: "Internal server Error",
         error: err,
       });
+      return res.redirect("/login");
   });
-  return res.redirect("/login");
+  
 });
 
 app.post("/logout_from_all_devices", isAuth, async (req, res) => {
   const username = req.session.user.username;
-
-  
 
   try {
     const deleteDb = await sessionModel.deleteMany({
@@ -193,11 +192,15 @@ app.post("/create-item", async (req, res) => {
     todo,
     username,
   });
-  console.log(todoObj);
+  // console.log(todoObj);
   try {
     let todoDb = await todoObj.save();
     console.log(todoDb);
-    return res.status(201).json("Todo created successfully");
+    return res.send({
+      status: 201,
+      message:"Todo created successfully",
+      data:todoDb
+    })
   } catch (error) {
     return res.status(500).json("Internal server error");
   }
@@ -205,14 +208,29 @@ app.post("/create-item", async (req, res) => {
 
 app.get("/read-item", async (req, res) => {
   const username = req.session.user.username;
+  let SKIP=Number(req.query.skip) || 0;
+  let LIMIT=3;
 
   try {
-    const todoDb = await todoModel.find({ username });
-    console.log(todoDb);
+    const todoDb = await todoModel.aggregate([
+      {$match:{username:username}},
+      {
+        $facet:{
+          data:[{$skip:SKIP}, {$limit:LIMIT}]
+        }
+      }
+    ])
+    // console.log(todoDb[0].data);
+    if (todoDb[0].data.length === 0) {
+      return res.send({
+        status: 400,
+        message: "No Todo Found",
+      });
+    }
     return res.send({
       status: 200,
       message: "Read Success",
-      data: todoDb,
+      data: todoDb[0].data,
     });
   } catch (error) {
     return res.send({
@@ -261,10 +279,24 @@ app.post("/delete-item", async(req, res)=>{
 
   const{deleteId}=req.body;
   const username=req.session.user.username;
+  if (!deleteId) {
+    return res.send({
+      status: 400,
+      message: "Missing todoId",
+    });
+  }
 
   try {
      const todoDb=await todoModel.findOne({_id:deleteId});
      console.log(todoDb);
+     if (!todoDb)
+     return res.send({
+       status: 400,
+       message: "No todo found",
+     });
+
+   console.log(todoDb);
+
 
      if(username!==todoDb.username){
       return res.status(403).json("Authorisation failed");
@@ -289,3 +321,5 @@ app.post("/delete-item", async(req, res)=>{
 app.listen(PORT, () => {
   console.log(`server is running on PORT ${PORT}`);
 });
+
+ 
